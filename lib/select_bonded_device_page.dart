@@ -2,8 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
-
-import 'bluetooth_device_list_entry.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class SelectBondedDevicePage extends StatefulWidget {
   /// If true, on page start there is performed discovery upon the bonded devices.
@@ -112,16 +111,16 @@ class _SelectBondedDevicePage extends State<SelectBondedDevicePage> {
 
   @override
   Widget build(BuildContext context) {
-    List<BluetoothDeviceListEntry> list = devices
-        .map((device) => BluetoothDeviceListEntry(
-              device: device.device,
-              rssi: device.rssi,
-              enabled: device.availability == _DeviceAvailability.yes,
-              onTap: () {
-                Navigator.of(context).pop(device.device);
-              },
-            ))
-        .toList();
+    // List<BluetoothDeviceListEntry> list = devices
+    //     .map((device) => BluetoothDeviceListEntry(
+    //           device: device.device,
+    //           rssi: device.rssi,
+    //           enabled: device.availability == _DeviceAvailability.yes,
+    //           onTap: () {
+    //             Navigator.of(context).pop(device.device);
+    //           },
+    //         ))
+    //     .toList();
     return Scaffold(
       // appBar: AppBar(
       //   actions: <Widget>[
@@ -204,12 +203,43 @@ class _SelectBondedDevicePage extends State<SelectBondedDevicePage> {
                 child: FractionallySizedBox(
                     widthFactor: 1,
                     child: Container(
-                        child: const Text(
+                        child: Text(
                       'الأجهزة المقترنة',
-                      style: TextStyle(fontSize: 35),
+                      style: GoogleFonts.cairoPlay(fontSize: 30),
                     )))),
           ),
-          Expanded(child: ListView(children: list)),
+          // Expanded(child: ListView(children: list)),
+          Expanded(
+            child: ListView.builder(
+              itemCount: devices.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  onTap: () {
+                    Navigator.of(context).pop(devices[index].device);
+                  },
+                  enabled: enabled,
+                  title: Text('${devices[index].device.name}', style: GoogleFonts.bebasNeue(fontSize: 22),),
+                  subtitle: Text(devices[index].device.address, style: GoogleFonts.aBeeZee(),),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      devices[index].device.address != null
+                          ? Container(
+                              margin: const EdgeInsets.all(8.0),
+                            )
+                          : const SizedBox(width: 0, height: 0),
+                      devices[index].device.isConnected
+                          ? const Icon(Icons.import_export)
+                          : const SizedBox(width: 0, height: 0),
+                      devices[index].device.isBonded
+                          ? const Icon(Icons.link)
+                          : const SizedBox(width: 0, height: 0),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
