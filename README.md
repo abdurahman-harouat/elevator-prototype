@@ -7,4 +7,8 @@
 <div align="right">
 <img src="https://raw.githubusercontent.com/abdurahman-harouat/elevator-prototype/main/showcase/elevator1.jpg" style="float: right;" height=400px>
 <img src="https://raw.githubusercontent.com/abdurahman-harouat/elevator-prototype/main/showcase/elevator2.jpg" style="float: right;" height=400px>
+<img src="https://raw.githubusercontent.com/abdurahman-harouat/elevator-prototype/main/showcase/elevator3.jpg" style="float: right;" height=400px>
+<img src="https://raw.githubusercontent.com/abdurahman-harouat/elevator-prototype/main/showcase/elevator4.jpg" style="float: right;" height=400px>
+<img src="https://raw.githubusercontent.com/abdurahman-harouat/elevator-prototype/main/showcase/elevator5.jpg" style="float: right;" height=400px>
+<img src="https://raw.githubusercontent.com/abdurahman-harouat/elevator-prototype/main/showcase/elevator6.jpg" style="float: right;" height=400px>
 </div>

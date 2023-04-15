@@ -40,14 +40,24 @@ class _MyAppState extends State<MyApp> {
     PermissionStatus bluetoothScan = await Permission.bluetoothScan.status;
   }
 
+  Future bluetoothPermissionActivate() async {
+	  PermissionStatus bluetoothPermission = await Permission.bluetooth.request();
+      PermissionStatus bluetoothConnectPermission = await Permission.bluetoothConnect.request();
+      PermissionStatus bluetoothScanPermission = await Permission.bluetoothScan.request();
+
+  }
+
   // flutter_blue_plus things
   final premium.FlutterBluePlus _flutterBlue = premium.FlutterBluePlus.instance;
+  // bluetooth state
   bool _isBluetoothOn = false;
+
 
   @override
   void initState() {
     super.initState();
     _checkBluetoothStatus();
+    bluetoothPermissionActivate();
   }
 
   // getting bluetooth status from flutter_blue_plus
@@ -103,11 +113,9 @@ class _MyAppState extends State<MyApp> {
                 child: FittedBox(
                   child: Text(
                     'تفعيل البلوتوت',
-                    style: GoogleFonts.cairoPlay(
-                        fontWeight: FontWeight.bold, fontSize: 30),
-                  ),
+                    style: TextStyle(fontSize: 30, fontFamily: 'CairoPlayBold'),
                 ),
-              ),
+              ),),
               Center(
                 child: FractionallySizedBox(
                   widthFactor: 0.7,
@@ -152,7 +160,7 @@ class _MyAppState extends State<MyApp> {
               ),
               const SizedBox(
                 height: 80,
-              ), 
+              ),
               // devices box
               // TODO: this should be added inside futureBuilder
 
@@ -292,8 +300,7 @@ class _MyAppState extends State<MyApp> {
                                 color: Color.fromARGB(255, 238, 237, 237)),
                             child: TextButton(
                               onPressed: () async {
-                                FlutterBluetoothSerial.instance
-                                    .requestEnable();
+                                FlutterBluetoothSerial.instance.requestEnable();
                                 final BluetoothDevice? selectedDevice =
                                     await Navigator.of(context).push(
                                   MaterialPageRoute(
@@ -313,34 +320,34 @@ class _MyAppState extends State<MyApp> {
                                 }
                               },
                               child: Container(
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            color: Colors.grey[200]),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Icon(Icons.link,
-                                  color: _isBluetoothOn
-                                      ? Colors.black
-                                      : Colors.grey[400]),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Text(
-                                "إتصال",
-                                style: GoogleFonts.tajawal(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: _isBluetoothOn
-                                        ? Colors.black
-                                        : Colors.grey[400]),
+                                decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    color: Colors.grey[200]),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(12.0),
+                                      child: Icon(Icons.link,
+                                          color: _isBluetoothOn
+                                              ? Colors.black
+                                              : Colors.grey[400]),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(12.0),
+                                      child: Text(
+                                        "إتصال",
+                                        style: GoogleFonts.tajawal(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: _isBluetoothOn
+                                                ? Colors.black
+                                                : Colors.grey[400]),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
                             )),
                       ],
                     );
