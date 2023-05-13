@@ -14,14 +14,11 @@ dependencies:
 
   cupertino_icons: ^1.0.2
   permission_handler: ^10.2.0
-  baseflow_plugin_template: ^2.1.1
   lottie: ^2.2.0
   flutter_blue_plus:
   flutter_bluetooth_serial: ^0.4.0
   # flutter_bluetooth_serial: ^0.2.2
-  animated_stack: ^0.2.0
-  hexcolor: ^2.0.7
-  scoped_model: ^2.0.0-nullsafety.0
+  # scoped_model: ^2.0.0-nullsafety.0
   google_fonts:
 
 dev_dependencies:
