@@ -1,218 +1,352 @@
-// motor pins
-#define motorPin1 2
-#define motorPin2 3
+// Input shift register pins
+#define SO 7
+#define CLK 4
+#define CLKI 6
+#define LD 5
 
-// sensors pins
-#define sensor6Pin 4
-#define sensor5Pin 5
-#define sensor4Pin 6
-#define sensor3Pin 7
-#define sensor2Pin 8
-#define sensor1Pin 9
+// 74hc595 shift pins
+#define ser 2
+#define latch 3
 
-// M74HC595B1
-#define DS_PIN 10     // data pin
-#define ORCLK_PIN 11  // output register clock
-#define SRCLK_PIN 12  // shift register clock
+// Motor pins
+#define motorpin1 9
+#define motorpin2 8
 
-// 7 segment digits table
-int digits[10][8]{
-  //{dp,a,b,c,d,e,f,g}
-  { 0, 0, 1, 1, 0, 0, 0, 0 },  // digit 1
-  { 0, 1, 1, 0, 1, 1, 0, 1 },  // digit 2
-  { 0, 1, 1, 1, 1, 0, 0, 1 },  // digit 3
-  { 0, 0, 1, 1, 0, 0, 1, 1 },  // digit 4
-  { 0, 1, 0, 1, 1, 0, 1, 1 },  // digit 5
-  { 0, 1, 0, 1, 1, 1, 1, 1 },  // digit 6
-};
+// Store values from shift registers
+byte shift[3];
 
-// #define pb0 8
-// #define pb1 9
-// #define pb2 10
-// #define pb3 11
-
-// preparing sensor states
-int sensor6State, sensor5State, sensor4State, sensor3State, sensor2State, sensor1State;
+// Sensor values
+const byte sensor1 = B01111111;
+const byte sensor2 = B10111111;
+const byte sensor3 = B11011111;
+const byte sensor4 = B11101111;
+const byte sensor5 = B11110111;
+const byte sensor6 = B11111011;
 
 void setup() {
-
-  // pin modes
-  pinMode(DS_PIN, OUTPUT);
-  pinMode(ORCLK_PIN, OUTPUT);
-  pinMode(SRCLK_PIN, OUTPUT);
-
-  pinMode(motorPin1, OUTPUT);
-  pinMode(motorPin2, OUTPUT);
-
-  pinMode(sensor1Pin, INPUT);
-  pinMode(sensor2Pin, INPUT);
-  pinMode(sensor3Pin, INPUT);
-  pinMode(sensor4Pin, INPUT);
-  pinMode(sensor5Pin, INPUT);
-  pinMode(sensor6Pin, INPUT);
-
-  // pinMode(pb0, INPUT);
-  // pinMode(pb1, INPUT);
-  // pinMode(pb2, INPUT);
-  // pinMode(pb3, INPUT);
-
-  // start serial communication
   Serial.begin(9600);
+
+  // Pins configuration
+  pinMode(CLK, OUTPUT);
+  pinMode(CLKI, OUTPUT);
+  pinMode(LD, OUTPUT);
+  pinMode(SO, INPUT);
+  pinMode(motorpin1, OUTPUT);
+  pinMode(motorpin2, OUTPUT);
+
+  pinMode(latch, OUTPUT);
+  pinMode(ser, OUTPUT);
 }
-// display digit function
-void DisplayDigit(int Digit) {
-  digitalWrite(ORCLK_PIN, LOW);
-  for (int i = 7; i >= 0; i--) {
-    digitalWrite(SRCLK_PIN, LOW);
-    if (digits[Digit][i] == 1) digitalWrite(DS_PIN, LOW);
-    if (digits[Digit][i] == 0) digitalWrite(DS_PIN, HIGH);
-    digitalWrite(SRCLK_PIN, HIGH);
+
+void stop() {
+  digitalWrite(motorpin1, LOW);
+  digitalWrite(motorpin2, LOW);
+}
+
+void down() {
+  digitalWrite(motorpin1, LOW);
+  digitalWrite(motorpin2, HIGH);
+}
+
+void up() {
+  digitalWrite(motorpin1, HIGH);
+  digitalWrite(motorpin2, LOW);
+}
+
+void shiftInRegisters() {
+  digitalWrite(CLKI, HIGH);
+  digitalWrite(LD, HIGH);
+  delayMicroseconds(5);
+  digitalWrite(LD, LOW);
+  digitalWrite(LD, HIGH);
+  digitalWrite(CLK, HIGH);
+  digitalWrite(CLKI, LOW);
+  shift[0] = shiftIn(SO, CLK, LSBFIRST);
+  shift[1] = shiftIn(SO, CLK, LSBFIRST);
+  shift[2] = shiftIn(SO, CLK, LSBFIRST);
+}
+
+
+void printShiftRegisters() {
+  for (int k = 0; k < 3; k++) {
+    for (int i = 0; i < 8; i++) {
+      Serial.print(bitRead(shift[k], i));
+    }
+    Serial.print(',');
   }
-  digitalWrite(ORCLK_PIN, HIGH);
+  Serial.println();
 }
 
-// goes up function
-void goesUP() {
-  digitalWrite(motorPin1, LOW);
-  digitalWrite(motorPin2, HIGH);
+
+//7 segment
+void seg() {
+  byte digit;
+  if (shift[0] == sensor1) {
+    digit = B11110010;  // digit 1
+  } else if (shift[0] == sensor2) {
+    digit = B01001000;  // digit 2
+  } else if (shift[0] == sensor3) {
+    digit = B01100000;  // digit 3
+  } else if (shift[0] == sensor4) {
+    digit = B00110011;  // digit 4
+  } else if (shift[0] == sensor5) {
+    digit = B00100100;  // digit 5
+  } else if (shift[0] == sensor6) {
+    digit = B00000100;  // digit 6
+  } else {
+    digit = B11111111;
+  }
+
+  digitalWrite(latch, LOW);
+  shiftOut(ser, CLK, MSBFIRST, digit);
+  digitalWrite(latch, HIGH);
 }
 
-// goes down functtion
-void goesDOWN() {
-  digitalWrite(motorPin1, HIGH);
-  digitalWrite(motorPin2, LOW);
+void update() {
+  shiftInRegisters();
+  seg();
 }
 
-// Stop elevator
-void stopELEVATOR() {
-  digitalWrite(motorPin1, LOW);
-  digitalWrite(motorPin2, LOW);
-}
 void loop() {
-  // getting the initial state of sensors
-  sensor1State = digitalRead(sensor1Pin);
-  sensor2State = digitalRead(sensor2Pin);
-  sensor3State = digitalRead(sensor3Pin);
-  sensor4State = digitalRead(sensor4Pin);
-  sensor5State = digitalRead(sensor5Pin);
-  sensor6State = digitalRead(sensor6Pin);
+  update();
+  printShiftRegisters();
+  delay(100);
 
-  // buttons logic
-  // if (digitalRead(pb0) == 0) {
-  //   // Move to the first floor
-  //   while (sensor1State == HIGH) {
-  //     sensor1State = digitalRead(sensor1Pin);
-  //     goesDOWN();
-  //   }
-  //   // elevator stops
-  //   stopELEVATOR();
-  // } else if (digitalRead(pb1) == 0) {
-  //   // Move to the second floor
-  //   while (sensor2State == HIGH) {
-  //     sensor2State = digitalRead(sensor2Pin);
-  //     if (sensor1State == LOW) {
-  //       goesUP();
-  //     } else {
-  //       goesDOWN();
-  //     }
-  //   }
-  //   stopELEVATOR();
-  // } else if (digitalRead(pb2) == 0) {
-  //   // Move to the third floor
-  //   while (sensor3State == HIGH) {
-  //     sensor3State = digitalRead(sensor3Pin);
-  //     if (sensor1State == LOW || sensor2State == LOW) {
-  //       goesUP();
-  //     } else {
-  //       goesDOWN();
-  //     }
-  //   }
-  //   stopELEVATOR();
-  // } else if (digitalRead(pb3) == 0) {
-  //   // Move to the fourth floor
-  //   while (sensor4State == HIGH) {
-  //     sensor4State = digitalRead(sensor4Pin);
-  //     goesUP();
-  //   }
-  //   stopELEVATOR();
-  // }
+  // Check if button 1 is pressed
+  if (shift[2] == B10000000 || shift[1] == B10000000) {
+    // Move motor until sensor1 is activated
+
+    if (shift[0] == sensor2 || shift[0] == sensor3 || shift[0] == sensor4 || shift[0] == sensor5 || shift[0] == sensor6) {
+      while (1) {
+        update();
+        down();
+        if (shift[0] == sensor1)
+          break;
+      }
+    }
+    stop();
+  }
+
+  // Check if button 2 is pressed
+  else if (shift[2] == B01000000 || shift[1] == B01000000) {
+    // going up()
+    if (shift[0] == sensor1) {
+      while (1) {
+        update();
+        up();
+        if (shift[0] == sensor2)
+          break;
+      }
+    }
+
+    // going down
+    else if (shift[0] == sensor3 || shift[0] == sensor4 || shift[0] == sensor5 || shift[0] == sensor6) {
+      while (1) {
+        update();
+        down();
+        if (shift[0] == sensor2)
+          break;
+      }
+    }
+    stop();
+  }
+
+  // Check if button 3 is pressed
+  else if (shift[2] == B00100000 || shift[1] == B00100000) {
+    // going up()
+    if (shift[0] == sensor1 || shift[0] == sensor2) {
+      while (1) {
+        update();
+        up();
+        if (shift[0] == sensor3)
+          break;
+      }
+    }
+
+    // going down
+    else if (shift[0] == sensor4 || shift[0] == sensor5 || shift[0] == sensor6) {
+      while (1) {
+        update();
+        down();
+        if (shift[0] == sensor3)
+          break;
+      }
+    }
+    stop();
+  }
+
+  // Check if button 4 is pressed
+  else if (shift[2] == B00000100 || shift[1] == B00001000) {
+    // Move motor until sensor4 is activated
+    // going up()
+    if (shift[0] == sensor1 || shift[0] == sensor2 || shift[0] == sensor3) {
+      while (1) {
+        update();
+        up();
+        if (shift[0] == sensor4)
+          break;
+      }
+    }
+
+    // going down
+    else if (shift[0] == sensor5 || shift[0] == sensor6) {
+      while (1) {
+        update();
+        down();
+        if (shift[0] == sensor4)
+          break;
+      }
+    }
+    stop();
+  }
+
+  // Check if button 5 is pressed
+  else if (shift[2] == B00000010 || shift[1] == B00000100) {
+    // going up()
+    if (shift[0] == sensor1 || shift[0] == sensor2 || shift[0] == sensor3 || shift[0] == sensor4) {
+      while (1) {
+        update();
+        up();
+        if (shift[0] == sensor5)
+          break;
+      }
+    }
+
+    // going down
+    else if (shift[0] == sensor6) {
+      while (1) {
+        update();
+        down();
+        if (shift[0] == sensor5)
+          break;
+      }
+    }
+    stop();
+  }
+
+
+  // Check if button 6 is pressed
+  else if (shift[2] == B00000001 || shift[1] == B00000010) {
+    if (shift[0] == sensor2 || shift[0] == sensor3 || shift[0] == sensor4 || shift[0] == sensor5 || shift[0] == sensor1) {
+    while (1) {
+      update();
+      up();
+      if (shift[0] == sensor6)
+        break;
+    }
+    }
+    stop();
+  }
+  ///////////////////////////////////////////////////////////////////////////////////////
 
   // Read commands from Bluetooth HC-05
   if (Serial.available() > 0) {
     int command = Serial.read();
     if (command == '1') {
-      // Move to the first floor
-      while (sensor1State == HIGH) {
-        sensor1State = digitalRead(sensor1Pin);
-        goesDOWN();
+      while (shift[0] != sensor1) {
+        update();
+        down();
       }
-      // elevator stops
-      stopELEVATOR();
-    } else if (command == '2') {
-      // Move to the second floor
-      while (sensor2State == HIGH) {
-        sensor2State = digitalRead(sensor2Pin);
-        if (sensor1State == LOW) {
-          goesUP();
-        } else {
-          goesDOWN();
-        }
-      }
-      stopELEVATOR();
-    } else if (command == '3') {
-      // Move to the third floor
-      while (sensor3State == HIGH) {
-        sensor3State = digitalRead(sensor3Pin);
-        if (sensor1State == LOW || sensor2State == LOW) {
-          goesUP();
-        } else {
-          goesDOWN();
-        }
-      }
-      stopELEVATOR();
-    } else if (command == '4') {
-      // Move to the fourth floor
-      while (sensor4State == HIGH) {
-        sensor4State = digitalRead(sensor4Pin);
-        if (sensor1State == LOW || sensor2State == LOW || sensor3State == LOW) {
-          goesUP();
-        } else {
-          goesDOWN();
-        }
-      }
-      stopELEVATOR();
-    } else if (command == '5') {
-      // Move to the fourth floor
-      while (sensor5State == HIGH) {
-        sensor5State = digitalRead(sensor5Pin);
-        if (sensor1State == LOW || sensor2State == LOW || sensor3State == LOW || sensor4State == LOW) {
-          goesUP();
-        } else {
-          goesDOWN();
-        }
-      }
-      stopELEVATOR();
-    } else if (command == '6') {
-      // Move to the fourth floor
-      while (sensor6State == HIGH) {
-        sensor6State = digitalRead(sensor6Pin);
-        goesUP();
-      }
-      stopELEVATOR();
+      stop();
     }
-  }
-  // 7-segment logic
-  if (sensor1State == LOW) {
-    DisplayDigit(1);
-  } else if (sensor2State == LOW) {
-    DisplayDigit(2);
-  } else if (sensor3State == LOW) {
-    DisplayDigit(3);
-  } else if (sensor4State == LOW) {
-    DisplayDigit(4);
-  } else if (sensor5State == LOW) {
-    DisplayDigit(5);
-  } else if (sensor6State == LOW) {
-    DisplayDigit(6);
+
+    else if (command == '2') {
+      // going up
+      if (shift[0] == sensor1) {
+        while (1) {
+          update();
+          up();
+          if (shift[0] == sensor2)
+            break;
+        }
+      }
+      // going down
+      else if (shift[0] == sensor3 || shift[0] == sensor4 || shift[0] == sensor5 || shift[0] == sensor6) {
+        while (1) {
+          update();
+          down();
+          if (shift[0] == sensor2)
+            break;
+        }
+      }
+      stop();
+    }
+
+    else if (command == '3') {
+      // going up
+      if (shift[0] == sensor1 || shift[0] == sensor2) {
+        while (1) {
+          update();
+          up();
+          if (shift[0] == sensor3)
+            break;
+        }
+      }
+      // going down
+      else if (shift[0] == sensor4 || shift[0] == sensor5 || shift[0] == sensor6) {
+        while (1) {
+          update();
+          down();
+          if (shift[0] == sensor3)
+            break;
+        }
+      }
+      stop();
+    }
+
+    else if (command == '4') {
+      // going up()
+      if (shift[0] == sensor1 || shift[0] == sensor2 || shift[0] == sensor3) {
+        while (1) {
+          update();
+          up();
+          if (shift[0] == sensor4)
+            break;
+        }
+      }
+      // going down
+      else if (shift[0] == sensor5 || shift[0] == sensor6) {
+        while (1) {
+          update();
+          down();
+          if (shift[0] == sensor4)
+            break;
+        }
+      }
+      stop();
+    }
+
+    else if (command == '5') {
+      // going up()
+      if (shift[0] == sensor1 || shift[0] == sensor2 || shift[0] == sensor3 || shift[0] == sensor4) {
+        while (1) {
+          update();
+          up();
+          if (shift[0] == sensor5)
+            break;
+        }
+      }
+
+      // going down
+      else if (shift[0] == sensor6) {
+        while (1) {
+          update();
+          down();
+          if (shift[0] == sensor5)
+            break;
+        }
+      }
+      stop();
+    }
+
+    else if (command == '6') {
+      while (1) {
+        update();
+        up();
+        if (shift[0] == sensor6)
+          break;
+      }
+      stop();
+    }
   }
 }
